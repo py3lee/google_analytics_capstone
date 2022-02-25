@@ -1,0 +1,534 @@
+---
+title: "Case Study 1: Report"
+subtitle: "Data report and insights from historical data (Jan 2021 - Dec 2021)"
+output:
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
+```
+
+# Background 
+
+Cyclistic is a bike-share program that features more than 5,800 bicycles and 600 docking stations.  
+
+You are a junior data analyst working in the marketing analyst team at Cyclistic, a bike-share company in Chicago. The director of marketing believes the company’s future success depends on maximizing the number of annual memberships. Therefore, your team wants to understand how casual riders and annual members use Cyclistic bikes differently. From these insights, your team will design a new marketing strategy to convert casual riders into annual members. 
+
+# Problem statement
+
+To understand how casual riders and annual members use Cyclistic bikes differently. These insights can then be used to design a new digital marketing strategy to convert casual riders into annual members. By converting casual riders into annual members, this is thought to increase company profitability as annual members are much more profitable than casual riders. 
+
+# Business task
+
+1. Identify historical trends for casual and annual bike riders 
+
+2. Determine the factors that influence casual riders into buying annual memberships
+
+3. Use insights from historical trends and factors associated with casual riders buying annual memberships to improve the casual rider to annual membership conversion rate via digital media. 
+
+# Definitions of key terms  
+
+Casual riders: customers who purchase single-ride or full-day passes 
+
+Cyclistic members: customers who purchase annual memberships
+
+# Data Sources 
+
+Past 12 months' of public data on bike trips by Motivate International Inc. 
+
+- Url of datasets: https://divvy-tripdata.s3.amazonaws.com/index.html
+
+- Data license agreement allow for non-exclusive, royalty-free, limited, perpetual license to access, reproduce, analyze, copy, modify, distribute in your product or service and use the Data for any lawful purpose. 
+
+  - Data License agreement: https://ride.divvybikes.com/data-license-agreement
+
+## Data structure
+
+These are tabular data sets - i.e. organized by rows and columns, with each row representing a ride by a user (ride_id), and column representing information about the ride (i.e. start station, end station, type of ride etc). 
+
+## Limitations of data source
+
+Due to data privacy concerns, riders' personally identifiable information is not available. This means that although we can identify each ride via the `ride_id`, it is also not known if these rides were by the same rider across different trips. 
+
+## Assessment of data source 
+
+For this case study, Cyclistic is a fictional company, and we assume that the data sets represent Cyclistic's historical data sets on bicycle usage and patterns; the data sets are therefore first-party data and are assumed to be original. 
+
+# Data set quality 
+
+Data set dimensions:   
+- 5595063 rows, 
+- 13 columns 
+
+The dataset contained rides that started from 2021-01-01 to 2021-12-31. 
+
+## Missing values
+
+There were no missing dates noted in the dataset. 
+
+However, there were a small percentage of missing values for the following variables: 
+
+- `end_lat` (0.09% of rows), 
+- `end_lng` (0.09% of rows), 
+- `start_station_name` (12.3% of rows),
+- `start_station_id` (12.3% of rows),
+- `end_station_name` (13.2% of rows),
+- `end_station_id` (13.2% of rows)  
+
+Pattern of missing values:  
+
+- the number of missing values for `start_station_name` is the same as the number of missing values for `start_station_id` (both 690809 missing values), 
+- the number of missing values for `end_station_name` is the same as the number of missing values for `end_station_id` (both 739170 missing values).
+
+In a real scenario, we should check further with the data source owner to find out why - because data missing in a systematic manner can result in data set bias.  
+
+There was still sufficient data for our current analysis as our data set consisted of 5595063 rows, and missing values only form a small percentage of less than 14% of all rows. As a precaution, the results of the analyses were re-checked again after dropping these missing values. The trends and relationships observed from the data were similar with or without dropping the missing values in the dataset, This indicates that missing values did not affect our current analyses. 
+
+## Data consistency 
+
+The data was consistent for all variables except for the station variables: the free text fields `start_station_name` and `end_station_name`, and station id fields `start_station_id` and `end_station_id`. 
+
+From the project brief Cyclistic has a network of 692 stations across Chicago. However, for the current data sets, there are more than 800 unique values for these station related variables:  
+- `start_station_id`: 834 unique values, 
+- `start_station_name` 847 unique values, 
+- `end_station_id`: 832 unique values,
+- `end_station_name` 844 unique values. 
+
+This indicates that these 4 variables may contain erroneous values. In a real scenario, we would have to get a list of known stations and check for erroneous entries. However, in view of the lack of further information and our current inability to validate the values within these variables, we would exclude these variables from our analyses. 
+
+In addition, other than the mismatch in unique values, the number of unique values within the variables also suggest that the values within the `start_station_name` and `end_station_name` may be inconsistent. 
+
+In theory, the number of unique values for `start_station_name` should be the same as the number of unique values for `start_station_id`, while the number of unique values for `end_station_name` should be the same as the number of unique values for `end_station_id.`
+
+There are 13 more unique values for `start_station_name` (847) as compared to `start_station_id` (834). 
+There are 12 more unique values for `end_station_name` (844) as compared to `end_station_id` (832).
+
+However, given that:
+
+(i) there are 5595063 rows, 
+(ii) there are at least 800 unique values for these variables,  
+(iii) these are not important variables to answer the business task at hand, 
+(iv) we are unable to validate the data within these fields 
+
+It was deemed that it was not worthwhile or feasible to manually check and replace all inconsistent values for the variables (`start_station_name`, `end_station_name`) for this use case. The inconsistent data values in these two variables were therefore not cleaned. 
+
+We will exclude these station variables from our current analyses. 
+
+## Erroneous rows identified  
+
+There were 653 rows (0.01%) with negative trip duration. After removing the erroneous rows, the remaining dataset contained 5,594,410 rows. 
+
+## Potential sources of bias 
+
+In a real scenario, we would check with the data source owner to understand if there are any known reasons for missing data within the data set, and also to understand if any data was excluded in the current [data repository](https://divvy-tripdata.s3.amazonaws.com/index.html). 
+
+From the project brief, "Cyclistic sets itself apart by also offering reclining bikes, hand tricycles, and cargo bikes, making bike-share more inclusive to people with disabilities and riders who can’t use a standard two-wheeled bike". 
+
+However, in our current data set, we only have 3 unique values for bike type (`rideable_type`): `classic_bike`, `electric_bike` and `docked_bike`. This means that we are missing data in the other bike types mentioned in the project brief (reclining bikes, hand tricycles, and cargo bikes). 
+
+Missing data,  under-represented groups or groups not included in the data repository could unintentionally bias our analysis. We would need to ensure that the data sets accurately represent the whole population of Cyclistic users. 
+
+We were also unable to validate the location data within the datasets, and therefore unable to identify erroneous rows contained within the variables `start_station_id`, `end_station_id`, `start_station_name` and `end_station_name`. If there are erroneous entries with these variables, then that could bias our current analyses. 
+
+## Relevance to the business task 
+
+We have complete data on whether rides are by members or casual users in the `member_casual` column.  
+
+Information from `rideable_type` can help us to differentiate the types of rides. Other date/day related variables can be derived from `started_at` and `ended_at`: `start_date`, `end_date`, `day_of_the_week`, `month` to aggregate the data in our analysis.  
+
+Trip duration (`ride_length`) can also be derived from `started_at`, `ended_at`. 
+
+The information contained within these data sets are at the ride level (i.e organized by ride_ids). However, due to data privacy concerns, we do not have information or sufficient information to aggregate these data sets to a customer level (i.e. organized by customer_id). This would be a limitation of our current analysis. 
+
+Another limitation of the current analysis is the exclusion of station related location information due to the mismatch in known number of unique values with the project brief (692 docking stations stated in the project brief vs >800 unique values noted in the current dataset) and our current inability to validate the data.   
+
+However, with the current information on ride types, date-related information and ride length, we still do have sufficient data to answer our business task of identifying historical trends for casual and annual bike riders, and determining possible factors that influence casual riders into buying annual memberships. 
+
+## Data preprocessing steps prior to analysis
+
+1. Loaded csv files from 12 months and combined into one single data frame 
+2. Converted the data type for the following variables into factors/categorical:
+  - `member_casual`,    
+  - `rideable_type`  
+3. Created the following new variables:  
+  - `ride_length`: the time difference in minutes from the date-time that the ride ended (`ended_at`) and the date-time that the ride started (`started_at`)  
+  - `start_date`: the date that the ride started,  
+  - `day_of_week`: the day of the week that the ride was started,  
+  - `month`: the month in which the ride was started,  
+  - `end_date`: the date in which the ride was ended  
+4. Covered the data type for the following variables:  
+  - `ride_length` converted to numeric data type,  
+  - `day_of_week` converted to ordered factor,  
+  - `month` converted to ordered factor,  
+5. Filtered out rows with ride_length less than zero or negative (erroneous rows)  
+6. Grouped the analyses by member_casual and other relevant variables (`day_of_week` / `month`/ `rideable_type`) to generate the relevant data visualization plots  
+
+```{r echo=FALSE, results='hide', warning=FALSE, message=FALSE}
+library(here)
+library(lubridate)
+library(tidyverse)
+
+all_trips <-  list.files(here("data"), full.names=TRUE) %>%
+    map_df(~read_csv(., show_col_types = FALSE))
+
+# all cleaning and data transformation steps for the dataset
+all_trips <- all_trips %>%
+  mutate(
+    member_casual = as.factor(member_casual),
+    rideable_type = as.factor(rideable_type),
+    ride_length = difftime(ended_at, started_at, units ='mins'),
+    start_date = date(started_at),
+    day_of_week = weekdays(started_at),
+    month = month(started_at, label=TRUE, abbr=TRUE),
+    end_date = date(ended_at)
+  ) %>%
+  mutate(
+    ride_length = as.numeric(as.character(ride_length)),
+    day_of_week = ordered(
+      day_of_week, 
+      levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+    ),
+    month = ordered(
+      month,
+      levels=month.abb
+    ) 
+  ) %>%
+  filter(ride_length>0)
+
+# note: due to the large file size (>2GB), we will not save this file. instead, we will save the aggregated data below. 
+```
+
+```{r generate aggregated dataset, echo=FALSE, result='hide', message=FALSE}
+
+# group data by member_casual and day_of_week
+trips_member_weekday <- all_trips %>%
+  group_by(member_casual, day_of_week) %>%
+  summarize(
+    number_of_trips = n(),
+    mean_ride_length = mean(ride_length, na.rm=TRUE),
+    median_ride_length = median(ride_length, na.rm = TRUE),
+  ) %>%
+  arrange(member_casual, day_of_week) 
+
+
+# group data by member_casual and rideable_type
+trips_member_bike <- all_trips %>% 
+  group_by(member_casual, rideable_type) %>%
+  summarize(
+   number_of_trips = n(),
+   mean_ride_length = mean(ride_length, na.rm=TRUE),
+   median_ride_length = median(ride_length, na.rm = TRUE),
+  )
+
+# group data by member_casual, day_of_week and rideable_type 
+trips_member_weekday_ride_type <- all_trips %>%
+  group_by(member_casual, day_of_week, rideable_type) %>%
+  summarize(
+    number_of_trips = n(),
+    mean_ride_length = mean(ride_length, na.rm=TRUE),
+    median_ride_length = median(ride_length, na.rm = TRUE),
+  ) %>%
+  arrange(member_casual, day_of_week) 
+
+# group data by member_casual and month 
+trips_member_month <- all_trips %>%
+  group_by(member_casual, month) %>%
+  summarize(
+    number_of_trips = n(),
+    mean_ride_length = mean(ride_length, na.rm=TRUE),
+    median_ride_length = median(ride_length, na.rm = TRUE),
+  ) %>%
+  arrange(member_casual, month) 
+
+# save as csv files for further analyses 
+write.csv(trips_member_weekday, "processed/trips_groupby_member_weekday.csv", row.names=FALSE)
+write.csv(trips_member_bike, "processed/trips_groupby_member_bike.csv", row.names=FALSE)
+write.csv(trips_member_weekday_ride_type, "processed/trips_groupby_member_weekday_ride_type.csv", row.names=FALSE)
+write.csv(trips_member_month, "processed/trips_groupby_member_month.csv", row.names=FALSE)
+```
+
+
+# Analysis 
+
+From the historical data from Jan 2021 to Dec 2021, annual members took more bike trips as compared to casual users. 
+
+```{r Number of trips by casual and annual members, echo=FALSE}
+all_trips %>%
+  group_by(member_casual) %>%
+  summarise(
+    number_of_trips = n()
+  ) %>% 
+  ggplot(aes(y = number_of_trips, x = member_casual, fill=member_casual)) +
+  geom_col(position = "dodge") +
+  labs(
+    title= "Total number of bike trips",
+    subtitle = "Jan 2021 to Dec 2021",
+    y = "Number of trips",
+    x = ""
+  ) +
+  geom_text(aes(label = scales::label_comma()(number_of_trips)), vjust=-0.3) +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(
+    legend.title=element_blank(),
+    axis.title=element_text(size=12),
+    plot.title = element_text(size=16)
+  )
+```
+
+However, in terms of trip duration, casual users took longer trips as compared to annual members.  
+Casual users took an average of 32 minutes for each ride, while annual members took an average of 14 minutes for each ride. 
+
+---
+
+```{r Trip duration by casual and annual members, echo=FALSE, results='asis'}
+table<- all_trips %>%
+  group_by(member_casual) %>%
+  summarise(
+    mean_ride_length = round(mean(ride_length, na.rm=TRUE),1),
+    median_ride_length = round(median(ride_length, na.rm = TRUE),1),
+    max_ride_length = round(max(ride_length, na.rm=TRUE),1),
+    min_ride_length = round(min(ride_length, na.rm=TRUE),1)
+  )
+knitr::kable(table, 
+      format='html', 
+      col.names=c('Member type', 'Mean', 'Median', 'Max', 'Min'), 
+      align='c', 
+      caption="Trip duration",
+      table.attr = "style='width:80%;'")
+```
+
+
+---
+
+In terms of bike usage patterns for each day of the week, casual members tended to make more trips over the weekends (Saturday and Sunday) as compared to annual members.  
+
+```{r Number of trips by day of the week, echo=FALSE}
+ggplot(trips_member_weekday)+  
+  aes(x = day_of_week, y = number_of_trips, fill = member_casual) +
+  geom_col(position = "dodge") +
+  labs(
+    title= "Number of trips by day of the week",
+    subtitle = "Jan 2021 to Dec 2021",
+    y = "Number of trips",
+    x = "Day of the week"
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(
+    legend.title=element_blank(),
+    axis.title=element_text(size=12),
+    plot.title = element_text(size=16)
+  )
+```
+
+---
+
+Casual users also tended to take longer trips as compared to annual members. 
+
+```{r Trip duration by day of the week, echo=FALSE}
+ggplot(trips_member_weekday)+  
+  aes(x = day_of_week, y = median_ride_length, fill = member_casual) +
+  geom_col(position = "dodge") +
+  labs(
+    title= "Trip duration by day of the week",
+    subtitle = "Jan 2021 to Dec 2021",
+    y = "Median trip duration",
+    x = "Day of the week"
+  ) +
+  scale_fill_brewer(palette = "Set1")+
+  theme_minimal() +
+  theme(
+    legend.title=element_blank(),
+    axis.title=element_text(size=12),
+    plot.title = element_text(size=16)
+  )
+```
+
+---
+
+In terms of bike type, most trips were made using either the classic or electric bikes. Most trips on the classic bikes were made by members. 
+Docked bikes were mainly used by casual users, with only 1 annual member using such a bike in 2021. 
+
+```{r Number of trips by bike type}
+ggplot(trips_member_bike)+  
+  aes(x = rideable_type, y = number_of_trips, fill = member_casual) +
+  geom_col(position = "dodge") +
+  labs(
+    title= "Number of trips by bike type",
+    subtitle = "Jan 2021 to Dec 2021",
+    y = "Number of trips",
+    x = "Bike type"
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(
+    legend.title=element_blank(),
+    axis.title=element_text(size=12),
+    plot.title = element_text(size=16)
+  ) 
+```
+
+
+---
+
+However, the casual users tended to take longer trips on docked bikes. 
+
+```{r trip duration by bike type, echo=FALSE}
+ggplot(trips_member_bike)+  
+  aes(x = rideable_type, y = median_ride_length, fill = member_casual) +
+  geom_col(position = "dodge") +
+  labs(
+    title= "Trip duration by bike type",
+    subtitle = "Jan 2021 to Dec 2021",
+    y = "Median trip duration (minutes)",
+    x = "Bike type"
+  ) +
+  scale_fill_brewer(palette = "Set1")+
+  theme_minimal() +
+  theme(
+    legend.title=element_blank(),
+    axis.title=element_text(size=12),
+    plot.title = element_text(size=16)
+  ) 
+  
+```
+
+---
+
+The bike usage patterns for annual members is similar throughout the week. 
+
+The number of trips taken using electric bikes by both groups is also similar throughout the week, but casual users tended to take more trips on classic bikes on the weekends (Saturday and Sunday).
+
+```{r total trips by day of the week and bike type, echo=FALSE, message=FALSE}
+
+ggplot(trips_member_weekday_ride_type)+  
+  aes(x = day_of_week, y = number_of_trips, fill = member_casual) +
+  geom_col(position = "dodge") +
+  labs(
+    title= "Number of trips by day of the week and bike type",
+    subtitle = "Jan 2021 to Dec 2021",
+    y = "Number of trips",
+    x = "Day of the week"
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(
+    legend.title=element_blank(),
+    axis.title=element_text(size=12),
+    plot.title = element_text(size=16),
+    panel.spacing = unit(1, "lines")
+  ) +
+  facet_wrap(~rideable_type, nrow=3)
+```
+
+---
+
+Trip duration for each bike type tended to be similar for both groups across the days of the week. 
+
+```{r trip duration by weekday and bike type, echo=FALSE}
+ggplot(trips_member_weekday_ride_type)+  
+  aes(x = day_of_week, y = median_ride_length, fill = member_casual) +
+  geom_col(position = "dodge") +
+  labs(
+    title= "Trip duration by day of the week and bike type",
+    subtitle = "Jan 2021 to Dec 2021",
+    y = "Median trip duration (minutes)",
+    x = "Day of the week"
+  ) +
+  scale_fill_brewer(palette = "Set1")+
+  theme_minimal() +
+  theme(
+    legend.title=element_blank(),
+    axis.title=element_text(size=12),
+    plot.title = element_text(size=16)
+  ) +
+  facet_wrap(~rideable_type, nrow=3)
+```
+
+---
+
+In terms of trips taken across the months, most trips tended to be made during the months of Jun to Sep, which are the late spring to early autumn months.
+
+```{r Number of trips by month}
+
+ggplot(trips_member_month)+  
+  aes(x = month, y = number_of_trips, fill = member_casual) +
+  geom_col(position = "dodge") +
+  labs(
+    title= "Number of trips by month",
+    subtitle = "Jan 2021 to Dec 2021",
+    y = "Number of trips",
+    x = "Month"
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(
+    legend.title=element_blank(),
+    axis.title=element_text(size=12),
+    plot.title = element_text(size=16)
+  )
+```
+
+---
+
+However, casual users tended to take longer trips across the months, as compared to members. 
+
+```{r Trip duration by month, echo=FALSE}
+ggplot(trips_member_month)+  
+  aes(x = month, y = median_ride_length, fill = member_casual) +
+  geom_col(position = "dodge") +
+  labs(
+    title= "Trip duration by month",
+    subtitle = "Jan 2021 to Dec 2021",
+    y = "Median trip duration",
+    x = "Month"
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_fill_brewer(palette = "Set1")+
+  theme_minimal() +
+  theme(
+    legend.title=element_blank(),
+    axis.title=element_text(size=12),
+    plot.title = element_text(size=16)
+  )
+```
+
+
+# Summary
+
+## Main findings 
+
+From the historical data from Jan 2021 to Dec 2021; 
+
+- Members took more frequent but shorter bike trips as compared to casual users. 
+- Casual members tended to make more trips over the weekends (Saturday and Sunday) as compared to annual members.  
+- Most trips were made using either the classic or electric bikes. However, casual users tended to take longer trips on docked bikes. 
+- Trip duration for each bike type tended to be similar for both groups across the days of the week. 
+- Most trips tended to be made during the months of June to September (late spring to early autumn months), but trip duration for both groups is similar across the months. 
+
+This suggests that there could be different reasons or motivations behind casual riders using Cyclistic bikes over the weekend as compared to weekdays. Since casual riders also tended to use the bikes for a longer time for each trip (as compared to members), their reasons for using Cyclistic bikes might be different from the reasons for annual members using Cyclistic bikes. By understanding the preferences of the casual groups, we can then use digital marketing techniques (eg. discounts or loyalty incentives) to nudge them into purchasing annual memberships. 
+
+## Recommendations 
+
+1. Cyclistic should conduct a focus group or digital survey targeted at weekend casual riders, dockable bike users and casual riders who had extended trip duration to understand the reasons why they use Cyclistic bikes and the factors that would influence them into buying an annual membership.   
+
+2. In terms of the possible marketing period, Cyclistic can consider conducting the campaign during the Spring/Summer months of June to September, when most casual trips occur.   
+
+## How the analyses can be improved 
+
+The information contained within these data sets are at the ride level (i.e organized by ride_ids) due to data privacy concerns. Obtaining further information to allow for the aggregation of the data sets to a customer level (i.e. organized by customer id) would enable us to better elucidate the differences between casual and annual members. If we can obtain demographic information of these users (eg. age, gender etc) then this would further add to our understanding of the various casual user groups that use Cyclistic bikes. 
+
+If we are able to obtain data on the usage patterns of the missing bike types (reclining bikes, hand tricycles, and cargo bikes), we can also compare if the usage patterns for these bikes are different for casual and annual members.  
+
+To understand seasonal bike usage patterns better, we can also obtain a list of public holidays and school holidays to compare holiday usage patterns for casual and annual members. 
+
+In addition, it would also be worthwhile to obtain data that can subset our analyses further into single-ride or full-day passes as these may actually represent two distinct groups with different needs. By analyzing them as a single group ('casual'), such differences may be masked. 
+
+To improve our current analyses, we can also analyze geo-location data using the longitude and latitude information. This would allow us to understand if there are geographical or location factors that influence the usage patterns of Cyclistic bikes. However, prior to that, we would first need to address the data inconsistencies and missing data within the station variables (`start_station_id`, `end_station_id`), and validate the location data to ensure that our data is clean and comprehensive before proceeding to analyse location data.  
+

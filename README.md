@@ -12,9 +12,17 @@ Past 12 months' of public data on bike trips by Motivate International Inc.
 
 ## Files 
 
-1. `Case_Study1 - Exploration.Rmd`
+1. [`Case_Study1 - Exploration.Rmd`](EDA/Case_Study1-Exploration.Rmd)
   - Details the initial data exploration of the data sets and directions for cleaning and preprocessing of files. 
- 
-2. `Case_Study1 - Report.Rmd`
+
+2. [`Case_Study1 - Report.Rmd`](Case_Study1-Report.Rmd)
   - The main report and deliverable for the capstone project 
-  - Contains the concise R code used to process the files from raw zip files downloaded from the [source](https://divvy-tripdata.s3.amazonaws.com/index.html) to the file used for analyses. 
+  - Contains information on:
+      - Evaluation of data sets, 
+      - Data quality, 
+      - Main findings, 
+      - Visualizations using R,
+      - Recommendations, 
+      - Limitations of analyses and 
+      - Directions to improve future analyses
+  - Contains the concise R code used to process the files from raw zip files downloaded from the [source](https://divvy-tripdata.s3.amazonaws.com/index.html) to the file used for analyses

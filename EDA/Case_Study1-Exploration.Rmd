@@ -1,0 +1,1177 @@
+---
+title: "Case Study 1: Exploration"
+subtitle: "Initial Exploratory Data Analysis"
+output:
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    number_sections: true
+---
+
+# Problem statement
+
+To understand how casual riders and annual members use Cyclistic bikes differently. These insights can then be used to design a new digital marketing strategy to convert casual riders into annual members. By converting casual riders into annual members, this is thought to increase company profitability as annual members are much more profitable than casual riders. 
+
+# Business task
+
+1. Identify historical trends for casual and annual bike riders 
+
+2. Determine the factors that influence casual riders into buying annual memberships
+
+3. Use insights from historical trends and factors associated with casual riders buying annual memberships to improve the casual rider to annual membership conversion rate via digital media. 
+
+# Definitions of key terms  
+
+Casual riders: customers who purchase single-ride or full-day passes 
+
+Cyclistic members: customers who purchase annual memberships
+
+# Data Sources 
+
+Past 12 months' of public data on bike trips by Motivate International Inc. 
+
+- Url of datasets: https://divvy-tripdata.s3.amazonaws.com/index.html
+
+- Data license agreement allow for non-exclusive, royalty-free, limited, perpetual license to access, reproduce, analyze, copy, modify, distribute in your product or service and use the Data for any lawful purpose. 
+
+  - Data License agreement: https://ride.divvybikes.com/data-license-agreement
+
+## Data structure
+
+These are tabular data sets - i.e. organized by rows and columns, with each row representing a ride by a user (ride_id), and column representing information about the ride (i.e. start station, end station, type of ride etc). 
+
+## Limitations of data source
+
+Due to data privacy concerns, riders' personally identifiable information is not available. This means that although we can identify each ride via the `ride_id`, it is also not known if these rides were by the same rider across different trips. 
+
+## Assessment of data source 
+
+For this case study, Cyclistic is a fictional company, and we assume that the data sets represent Cyclistic's historical data sets on bicycle usage and patterns; the data sets are therefore first-party data and are assumed to be original. If the data sets are of high quality (we will assess this during the Initial Exploratory Data Analysis below), then these data sets can be regarded as a reliable and credible source of Cyclistic's historical bicycle usage data. 
+
+To understand whether the data sources are comprehensive, we need to first explore the data sets to understand the percentage of missing values, erroneous or inconsistent entries, variables available for analysis. This will then help us to understand if we have sufficient and relevant data to answer the business task of identifying historical trends for casual and annual bike riders, and determining the factors that influence casual riders into buying annual memberships. 
+
+
+# Initial Exploratory Data Analysis  
+
+To understand the data structure of the data sets, we need to first perform an initial exploratory data analysis (EDA). 
+
+This will help us to understand the data structure and quality of the data sets. Together with the information on the data sources above, this will help us to determine if the data sets are ROCCC (Reliable, Original, Comprehensive, Current, and Cited).  
+
+The information contained within this section will also help us to prepare and clean the data sets for analysis.  
+
+```{r setup, check and install required packages, echo=FALSE}
+# Check if required packages are in the list of installed packages. if not, to install the new packages. 
+list_of_packages <- c("here", "lubridate", "skimr", "tidyverse")
+new_packages <- list_of_packages[!(list_of_packages %in% installed.packages()[,"Package"])]
+if(length(new_packages)) install.packages(new_packages)
+```
+
+## Define utility functions 
+
+```{r utility functions}
+#' Checks for missing dates in the data set, based on a daily sequence of dates generated from the earliest and latest dates
+#'
+#' @param df data frame
+#' @param datetime_col (string): name of the datetime column to check for missing dates
+#'
+#' @return
+#' @export
+#'
+#' @examples
+check_missing_date <- function(df, datetime_col){
+  
+  # get a daily sequence of dates based on earliest and latest date in the data set
+  date_range <- seq(
+    min(date(df[[datetime_col]])), 
+    max(date(df[[datetime_col]])), 
+    by = 1
+  )
+  
+  missing_dates <- date_range[!date_range %in% date(df[[datetime_col]])]
+
+  if (length(missing_dates)){
+    print(paste0("Missing dates in this data set: ", missing_dates))
+  } else {
+    print("No missing dates in this data set")
+  }
+}
+```
+
+## Load required packages
+
+```{r Load required libraries, echo=FALSE}
+library(here)
+library(lubridate)
+library(skimr)
+library(tidyverse)
+```
+
+```{r Loading the first file, message=FALSE}
+list_zip <- list.files(here("data"), full.names=TRUE)
+```
+
+There are 12 zip files for each month. 
+
+```{r Checking first zip file}
+unzip(list_zip[1], list=TRUE)
+```
+
+Noted both files have the same name, but one is for _MACOSX. We will just use the first csv file in the zip file
+
+```{r Load 202101-divvy-tripdata.csv, message=FALSE}
+jan2021<- read_csv(list_zip[1])
+```
+
+## Exploring the first csv file: Jan2021
+
+```{r 202101-divvy-tripdata.zip}
+glimpse(jan2021)
+```
+
+```{r skim jan2021}
+skim_without_charts(jan2021)
+```
+
+## Initial thoughts after skimming the dataset 
+
+There are 96834 rows with 13 columns in this dataset.   
+
+Noted from the problem brief that there are 5,824 bicycles in Cyclistic's fleet. However there is no variable in this current data set that indicates the bicycle id. Therefore, we are unable to double check the number of bicycles in this data set. Let's look at each individual variable in this data set:    
+
+1. `ride_id` (character type)  
+- has 96834 unique values out of 96834 rows; it is unique for each row.  
+- It is likely the primary key variable for this csv file, and represents each ride, 
+- There are no missing values for this variable  
+
+2. `rideable_type`(character type)  
+- there are only 3 unique values, with no missing values
+
+3. `start_station_name` (character type)  
+- there are 640 unique values, with 8625 missing values (8.9% of all rows)  
+- from the problem brief, there are 692 stations across Chicago, so it's possible that (i) some stations are missing in this Jan 2021 data set, or (ii) the remaining stations have not been used in Jan 2021 and hence are not reflected in Jan 2021, but are reflected when we analyze the data for the whole year (i.e. Jan - Dec 2021)  
+
+4. `start_station_id` (character type)  
+- in theory, the number of unique values should be the same as `start_station_name`. However, there are only 638 unique values. 
+This means that there are 2 `start_station_name` values which likely have the same `start_station_id`. We'd need to find out during the sanity checks below on whether this was a data entry error or not. 
+- similar to `start_station_name`, there are 8625 missing values (8.9% of all rows)  
+
+5. `end_station_name` (character type)  
+- there are 632 unique values, with 10277 missing rows (10.6% of all rows)  
+
+6. `end_station_id` (character type)  
+- the number of unique values for this variable should, in theory, also match with the `end_station_name`. However, there are only 629 unique values for this variable. We'd need to find out during the sanity checks below on whether this was a data entry error or not. 
+- similar to `end_station_name`, there are 10277 missing rows (10.6% of all rows)  
+
+7. `member_casual` (character type)  
+- there are only 2 unique values for this variable, with no missing values. 
+
+8. `start_lat` (numeric type)  
+- likely represents the latitude of the bike station where the ride was started  
+- there are no missing values for this variable  
+
+9. `start_lng` (numeric type)  
+- likely represents the longitude of the bike station where the ride was started 
+- there are no missing values for this variable  
+
+10. `end_lat` (numeric type)  
+- likely represents the latitude of the bike station where the ride was ended 
+- there are only 104 missing values (0.1% of all rows)  
+- potentially, this could be used to impute the missing `end_station_id` if required  
+
+11. `end_lng` (numeric type)   
+- likely represents the longitude of the bike station where the ride was ended  
+- similar to `end_lat`, there are 104 missing values (0.1% of all rows)  
+
+12. `started_at` (POSIXct/ date time type)  
+- no missing values.  
+- we need to check in the sanity checks below on whether there were missing dates 
+- earliest date in this data set was 2021-01-01,
+- latest date in this data set was 2021-01-31  
+
+13. `ended_at` (POSIXct/ date time type)  
+- no missing values. 
+- we need to check in the sanity checks below on whether there were missing dates 
+- earliest date in this data set was 2021-01-01, 
+- latest date in this data set was 2021-02-01  
+
+## Sanity checks 
+
+### duplicated rows 
+
+Are there any duplicated rows in this data set? Duplicate rows could indicate problems during the initial data ingestion phase, or when running the SQL query from the original database. 
+
+```{r duplicate rows}
+sum(duplicated(jan2021))
+```
+
+There are no duplicate rows in this data set. 
+
+```{r colnames}
+colnames(jan2021)
+```
+ Checking each column individually by the order of the columns in the data set above. 
+
+### `ride_id`
+
+Is each row unique?  
+
+```{r ride_id}
+sum(duplicated(jan2021$ride_id))
+n_unique(jan2021$ride_id) == nrow(jan2021)
+```
+
+There are no duplicated values for `ride_id`, and the number of unique values for `ride_id` is the same as the number of rows in this data set. 
+That means that it can be used as the primary key for this data set.  
+
+### `rideable_type`  
+
+From the initial exploration above, there are only 3 unique values for this variable, and no missing values.  
+What are the unique values?  
+
+```{r rideable_type}
+unique(jan2021$rideable_type)
+```
+### `started_at` 
+
+From the initial exploration above, this is a POSIXct/ date time type.   
+- There are no missing values.  
+- we need to check whether there were missing dates 
+- earliest date in this data set was 2021-01-01,
+- latest date in this data set was 2021-01-31  
+
+To facilitate the checking process, we need to first separate the date times into a new column, `start_date`. 
+Then, we sort the data set by date, and check the number of unique dates and dates present to check for missing dates. 
+
+```{r started_at}
+jan2021$start_date <- date(jan2021$started_at) # get start date
+
+jan2021<- jan2021 %>%
+  arrange(start_date)
+
+n_unique(jan2021$start_date)
+
+unique(jan2021$start_date)
+```
+From the visual inspection, there are 31 unique dates, and there are no missing dates for this month. However, as there are data sets from Jan till Dec 2021, we should use a function to systematically check for missing dates in the data sets. We previously defined `check_missing_date` function under the utility functions section earlier. Let's use it: 
+
+```{r check missing dates}
+check_missing_date(jan2021, 'started_at')
+```
+Let's also create another variable `start_day` to indicate the day of the week that the ride was started
+
+```{r start_day}
+jan2021$start_day <- weekdays(jan2021$start_date)
+```
+
+### `ended_at` 
+
+From the initial exploration earlier, this variable is a POSIXct/ date time type.  
+- There are no missing values. 
+- earliest date in this data set was 2021-01-01, 
+- latest date in this data set was 2021-02-01  
+
+Similar to what we did for `started_at`, we will create a new column we need to first separate the date times into a new column, `end_date`.
+Since we have already sorted the data set by start_date, we just need to check the number of unique dates and dates present to check for missing dates. 
+
+```{r end_date, end_day}
+check_missing_date(jan2021, 'ended_at')
+
+jan2021$end_date <- date(jan2021$ended_at) # get end date
+
+## double check 
+n_unique(jan2021$end_date)
+
+## double check 
+unique(jan2021$end_date)
+```
+
+There is 1 date which is not present in `start_date`: 2021-02-01. 
+It is plausible that the customer could have started the ride on the last day of Jan 2021 and ended the following morning. 
+
+Let's just double check that this is the case:
+
+```{r checking end_date 1 Feb 2021}
+jan2021[jan2021$end_date == '2021-02-01',]
+```
+
+There were 5 rides which started on 2021-01-31 and ended the next day on 2021-02-01.  
+
+Do most of the rides end on the same date?  
+
+```{r}
+jan2021 %>%
+  count(start_date == end_date)
+
+# see rows in which start_date!=end_date
+jan2021[jan2021$start_date!=jan2021$end_date,]
+```
+
+So there are 304 rows in which the start dates are not the same as the end date. 
+This might be useful to know member or casual riders are more likely to take inter-day rides. 
+
+### ride_length  
+
+To understand how long each ride took, we can create a new variable, `ride_length`.  
+It would be more useful if we set the unit of time as the same unit that is used for charging users. eg. If Cyclistic charges users per 30-minute blocks, then we can set the units as 30-minute blocks. However, in the absence of further information, We will set the unit of time as minutes.  
+
+```{r ride_length}
+jan2021 <- jan2021 %>%
+  mutate(
+    ride_length = as.numeric(as.character(difftime(ended_at, started_at, units='mins')))
+  ) 
+summary(jan2021$ride_length)
+```
+From the sumamry, we can see that there are negative values and an extreme max value of 19825.917 mins. We need to check these values:
+
+```{r check negative ride length}
+jan2021[jan2021$ride_length<0,]
+```
+
+These are likely erroneous. We will remove negative ride lengths as part of our processing step later. 
+Checking the maximum value: 
+
+```{r checking outlier ride_length}
+jan2021[jan2021$ride_length==max(jan2021$ride_length),]
+```
+
+This ride took 2 weeks! Unfortunately we do not have further information at this stage to understand if this represents an erroneous record. For example, if we have invoice and payment records to show that the rider actually paid for the ride for 2 weeks, then this is an outlier ride length. On the contrary, if this is due to erroneous sensors on the bike and no one has actually paid for this ride_id, then this represents an erroneous record which we would have to remove. 
+
+Due to the lack of further information, we will leave this entry as it is for now. 
+
+### `start_station_name` and `start_station_id`
+
+From the initial exploration above, 
+
+`start_station_name`: this is a string/character column with 640 unique values, and 8625 missing values (8.9% of all rows).  
+`start_station_id`:  this is a string/character column. However, there are only 638 unique values, and 8625 missing values (8.9% of all rows).    
+
+This means that there are `start_station_name` values which likely have the same `start_station_id`. We'd need to find out during the sanity checks below on whether this was a data entry error or not. 
+
+#### Inconsistent row values  
+
+```{r start_station_name and start_station_id}
+jan2021 %>%
+  count(start_station_id, start_station_name, sort=TRUE)  %>%
+  count(start_station_id, sort=TRUE)
+```
+So `start_station_id` of 13074 and 631  both have 2 `start_station_name` each. Let's check:
+
+```{r start_station_name: check inconsistent values}
+jan2021 %>%
+  filter(start_station_id %in% c('13074', '631')) %>%
+  select(start_station_id, start_station_name) %>% 
+  group_by(start_station_id, start_station_name) %>%
+  summarize(n=n())
+```
+
+The discrepancy is due to the different `start_station_name` for the `start_station_id` of 13074 and 631. The data for `start_station_name` is inconsistent within this data set.  
+
+- For `start_station_id` 13074, there are 13 rows with `start_station_name` of `Broadway & Wilson - Truman College Vaccination Site`, and 144 rows with `start_station_name` of `Broadway & Wilson Ave`.  
+- For `start_station_id` of 631, there are 5 rows with `start_station_name` of `Malcolm X College Vaccination Site`, while there are 30 rows with `start_station_name` of `Malcolm X College`.  
+
+Let's make them consistent by replacing `	Broadway & Wilson - Truman College Vaccination Site` (13 rows) with the more commonly used term `Broadway & Wilson Ave`(144 rows), and `Malcolm X College Vaccination Site` (5 rows) with `	Malcolm X College`. 
+
+```{r start_station_name:replace inconsistent values}
+jan2021$start_station_name[jan2021$start_station_name=="Broadway & Wilson - Truman College Vaccination Site"]<- "Broadway & Wilson Ave"
+jan2021$start_station_name[jan2021$start_station_name=="Malcolm X College Vaccination Site"]<- "Malcolm X College"
+```
+
+Double checking that it's been replaced correctly: 
+
+```{r double checking replacement process}
+jan2021 %>%
+  filter(start_station_id %in% c('13074', '631')) %>%
+  select(start_station_id, start_station_name) %>% 
+  group_by(start_station_id, start_station_name) %>%
+  summarize(n=n())
+```
+The totals match with the above.
+
+However, given that there are:
+
+(i) 12 months' worth of data, 
+(ii) at least 600 unique values for this variable,  
+(iii) such inconsistent values only form a very small proportion of the dataset (18 rows out of 96834 rows, or 0.02% of all rows),  
+(iv) this is not an important variable to answer the business task at hand, 
+
+It may not be worthwhile or feasible to manually check and replace all inconsistent values for this variable for this use case. Since `start_station_id` and `start_station_name` represent the same underlying construct (eg. location of the station), we can also just use `start_station_id` in our analyses later.  
+
+#### start_station_name == "HQ QR"
+
+From this [R script](https://docs.google.com/document/d/1TTj5KNKf4BWvEORGm10oNbpwTRk1hamsWJGj6qRWpuI/edit), `start_station_name` of "HQ QR" was considered to be erroneous/bad data to be excluded as they refer to bikes taken out of docks and checked for quality by Divvy.  
+
+Let's explore this as well: 
+
+```{r}
+jan2021 %>% 
+  filter(start_station_name =="HQ QR") %>%
+  count()
+```
+
+There are no rows with start_station_name == "HQ QR" in this Jan 2021 dataset. We can check later for the other months if they contain such values, and remove them as part of the preprocessing. 
+
+#### Missing values
+
+Are these values missing at random? Or do they follow a pattern?  
+
+Let's check the missing start_station_id values:  
+
+```{r missing start_station_id}
+missing_start_station_id<-jan2021[is.na(jan2021$start_station_id),]
+```
+
+Do the missing start_station_id have any start_station_name?
+
+```{r missing start_station_id and start_station_name}
+missing_start_station_id %>%
+  count(start_station_name, sort=TRUE)
+```
+So all the missing start_station_id have missing start_station_names. Let's check if there are any other patterns for the missing data. 
+
+```{r missing start_station_id and end_station_id or end_station_name}
+
+# Do they only affect certain end_station_id? 
+missing_start_station_id %>%
+  count(end_station_id, sort=TRUE)
+
+# Do they only affect certain end_station_name? 
+missing_start_station_id %>%
+  count(end_station_name, sort=TRUE)
+```
+
+So most of the missing start_station_id and start_station_name also have missing end_station_id and end_station_name (n=5577).
+
+```{r start_station_id missingness pattern}
+
+# Do they only affect members or casual members? 
+missing_start_station_id %>%
+  count(member_casual, sort=TRUE)
+
+# Do they follow certain dates?
+missing_start_station_id %>%
+  count(start_date, sort=TRUE)
+
+# Are they missing at certain days of the week?
+missing_start_station_id %>%
+  count(start_day, sort=TRUE)
+
+# Are they missing at certain locations only? 
+hist(missing_start_station_id$start_lat)
+hist(missing_start_station_id$start_lng)
+
+```
+
+So the missing `start_station_id` have the same missing `start_station_name`. Most of these missing values also have missing `end_station_id` and `end_station_name` as well (n=5577). In a real scenario, we should check further with the data source owner to find out why - because data missing in a systematic manner can result in data set bias.  
+
+However, since our Jan 2021 data set consists of 96834 rows, and missing values for this column only forms a small percentage of 8.9% of all rows, we still have sufficient data for our current analysis. Furthermore, prior to our analysis, we do not know if this is an important variable or not, and whether the missing values affect our analysis. We can therefore still proceed with the analysis at this stage, and then decide later if we need to drop these missing values or perhaps obtain the location data from latitude/longitude data instead.   
+
+### `end_station_id` and `end_station_name`
+
+From the initial exploration above,
+- `end_station_name` (character type) has 632 unique values, with 10277 missing rows (10.6% of all rows)  
+- `end_station_id` (character type) has only 629 unique values and 10277 missing rows (10.6% of all rows)  
+
+This indicates that there are some `end_station_id` that have different/inconsistent end_station_names`. Similar to above with `start_station_id` and `start_station_name`, let's find out which values are inconsistent:
+
+```{r end_station_id: checking for inconsistent values}
+jan2021 %>%
+  count(end_station_id, end_station_name, sort=TRUE)  %>%
+  count(end_station_id, sort=TRUE)
+```
+
+#### Check inconsistent row values 
+
+```{r end_station_name: inconsistent values}
+jan2021 %>%
+  filter(end_station_id %in% c('13074', '631', 'KA1504000168')) %>%
+  select(end_station_id, end_station_name) %>% 
+  group_by(end_station_id, end_station_name) %>%
+  summarize(n=n())
+```
+
+For `end_station_id` of 13074, there were 18 rows with `end_station_name` of `Broadway & Wilson - Truman College Vaccination Site`, and 156 rows with `end_station_name` of `Broadway & Wilson Ave`  
+
+For `end_station_id` of 631, there were 25 rows with `end_station_name` of `Malcolm X College`, and 5 rows with `end_station_name` of `Malcolm X College Vaccination Site`  
+
+For `end_station_id` of KA1504000168, there was 1 row with `end_station_name` of `Western & 28th - Velasquez Institute Vaccination Site`, and 3 rows with `end_station_name` of `Western Ave & 28th St`  
+
+Similar as above, given that there are:
+
+(i) 12 months' worth of data, 
+(ii) at least 600 unique values for this variable,  
+(iii) such inconsistent values only form a very small proportion of the dataset (24 rows out of 96834 rows, or 0.02% of all rows),  
+(iv) this is not an important variable to answer the business task at hand, 
+
+It may not be worthwhile or feasible to manually check and replace all inconsistent values for this variable for this use case. Since `end_station_id` and `end_station_name` represent the same underlying construct (eg. location of the station), we can also just use `end_station_id` in our analyses later.  
+
+#### Missing values 
+
+Similar to above for `start_station_id`, let's check if these missing end_station_id follow any pattern.
+
+```{r missing end_station_id}
+missing_end_station_id<-jan2021[is.na(jan2021$end_station_id),]
+```
+
+Do the missing end_station_id have any end_station_name?
+
+```{r missing end_station_id and end_station_name}
+missing_end_station_id %>%
+  count(end_station_name, sort=TRUE)
+```
+So all the missing end_station_id have missing end_station_name. From the earlier section, we know that approximate half of these (n=5577) have missing start_station_id and start_station_name. Let's check if there are any other patterns for the missing data. 
+
+```{r end_station_id missingness pattern}
+
+# Do they only affect members or casual members? 
+missing_end_station_id %>%
+  count(member_casual, sort=TRUE)
+
+# Do they follow certain dates?
+missing_end_station_id %>%
+  count(end_date, sort=TRUE)
+
+# Are they missing at certain days of the week?
+missing_end_station_id %>%
+  count(end_day, sort=TRUE)
+
+# Are they missing at certain locations only? 
+hist(missing_end_station_id$end_lat)
+hist(missing_end_station_id$end_lng)
+
+```
+Similar to above, in a real scenario, we should check further with the data source owner to find out why, just in case these missing values inadvertently bias our data set. 
+
+However, since our Jan 2021 data set consists of 96834 rows, and missing values for this column only forms a small percentage of 10.6% of all rows, we still have sufficient data for our current analysis. Furthermore, prior to our analysis, we do not know if this is an important variable or not, and whether the missing values affect our analysis. We can therefore still proceed with the analysis at this stage, and then decide later if we need to drop these missing values or perhaps obtain the location data from latitude/longitude data instead.   
+
+# Summary from initial EDA 
+
+Evaluation of data set for Jan 2021: 
+
+## Data set quality 
+
+Data set dimensions:   
+- Rows: 96,834  
+- Columns: 13  
+
+### Missing values 
+
+Variables with missing values:  
+- start_station_name: 8625 rows (8.9% of rows)  
+- start_station_id: 8625 rows (8.9% of rows)   
+- end_station_name: 10277 rows (10.6% of rows)  
+- end_station_id: 10277 rows (10.6% of rows)  
+- end_lat: 103 rows (0.1% of rows)  
+- end_lng: 103 rows (0.1% of rows)  
+
+Missing `start_station_id` have the same missing `start_station_name`. Most of these missing values also have missing `end_station_id` and `end_station_name` as well (n=5577). In a real scenario, we should check further with the data source owner to find out why - because data missing in a systematic manner can result in data set bias.  
+
+However, since our Jan 2021 data set consists of 96834 rows, and missing values for this column only forms a small percentage of less than 11% of all rows, we still have sufficient data for our current analysis. 
+
+Furthermore, prior to our analysis, we do not know if these missing values affect our analysis. We can therefore still proceed with the analysis at this stage, and then decide later if we need to drop these missing values or perhaps obtain the location data from latitude/longitude data instead.   
+### Erroneous rows 
+
+There were 2 rows with erroneous negative ride_length values. 
+We will exclude negative ride_length values in the analysis. 
+
+In addition, from this [R script](https://docs.google.com/document/d/1TTj5KNKf4BWvEORGm10oNbpwTRk1hamsWJGj6qRWpuI/edit), `start_station_name` of "HQ QR" was considered to be erroneous/bad data to be excluded as they refer to bikes taken out of docks and checked for quality by Divvy.  
+We will also exclude rows with start_station_name == "HQ QR" during our cleaning process. 
+
+### Inconsistent data values 
+
+- For `start_station_id` 13074, there are 13 rows with `start_station_name` of `Broadway & Wilson - Truman College Vaccination Site`, and 144 rows with `start_station_name` of `Broadway & Wilson Ave`.  
+- For `start_station_id` of 631, there are 5 rows with `start_station_name` of `Malcolm X College Vaccination Site`, while there are 30 rows with `start_station_name` of `Malcolm X College`.  
+
+- For `end_station_id` of 13074, there were 18 rows with `end_station_name` of `Broadway & Wilson - Truman College Vaccination Site`, and 156 rows with `end_station_name` of `Broadway & Wilson Ave`  
+- For `end_station_id` of 631, there were 25 rows with `end_station_name` of `Malcolm X College`, and 5 rows with `end_station_name` of `Malcolm X College Vaccination Site`  
+- For `end_station_id` of KA1504000168, there was 1 row with `end_station_name` of `Western & 28th - Velasquez Institute Vaccination Site`, and 3 rows with `end_station_name` of `Western Ave & 28th St`  
+
+However, given that there are:
+
+(i) 12 months' worth of data, 
+(ii) at least 600 unique values for these 2 variables,  
+(iii) such inconsistent values only form a very small proportion of the data set (0.02% of all rows),  
+(iv) this is not an important variable to answer the business task at hand, 
+
+It may not be worthwhile or feasible to manually check and replace all inconsistent values for this variable for this use case. Since the station id variables (`start_station_id`, `end_station_id`) and station name variables (`start_station_name`, `end_Station_name`) represent the same underlying construct (eg. location of the station), we can also just use the id variables in our analyses later.  
+
+## Potential sources of bias 
+
+In a real scenario, we should check with the data source owner to understand if there are any known reasons for missing data within the data set, and also to understand if any data was excluded in the current [data repository](https://divvy-tripdata.s3.amazonaws.com/index.html). This is because missing data,  under-represented groups or groups not included in the data repository could unintentionally bias our analysis. We would need to ensure that the data sets accurately represent the whole population of Cyclistic users. 
+
+## Relevance to the business task 
+
+We have complete data on whether rides are by members or casual users in the `member_casual` column.  
+
+Information from `rideable_type` can help us to differentiate the types of rides, while location data are contained within the variable `start_station_name`, `start_station_id`, `end_station_name`, `end_station_id`, `start_lat`, `start_lng`, `end_lat`, `end_lng`. 
+
+We also have date related data from the variables `started_at`, `ended_at`. We can derive other date/day related variables from these 2 variables, such as `start_date`, `end_date`, `day_of_the_week`, `month` to aggregate the data in our analysis.  
+
+We were also able to derive information on ride length (variable: `ride_length`). 
+
+The information contained within these data sets are at the ride level (i.e organized by ride_ids). However, due to data privacy concerns, we do not have information or sufficient information to aggregate these data sets to a customer level (i.e. organized by customer_id). This would be a limitation of our current analysis.  
+
+However, with the current information on ride types, location, date-related information and ride length, we still do have sufficient data to answer our business task of identifying historical trends for casual and annual bike riders, and determining possible factors that influence casual riders into buying annual memberships. 
+
+
+# Steps before analysis 
+
+1. Combine all data sets for the whole year
+2. Ensure correct data types
+3. Create required variables 
+4. Clean the data set again 
+4. Re-check combined data sets 
+
+---
+
+## Combine all data sets for the whole year 
+
+Before combing the data sets, we need to check if the headers are the same for all the other months. 
+Since this is a large data set, we will only read 1 row and obtain the header names to check first. 
+
+```{r check headers of other csv files}
+for (zip in list_zip){
+  print(colnames(read_csv(zip, col_types= "c", n_max=1)))
+}
+```
+The column names are all the same. We can combine them into one dataframe. 
+
+```{r read csvs for all months}
+all_trips <- list_zip %>%
+    map_df(~read_csv(.))
+```
+
+## Inspect combined data set 
+
+```{r}
+glimpse(all_trips)
+skim_without_charts(all_trips)
+```
+
+
+There are 5595063 rows, 13 columns in this dataset.
+ride_id is unique for each row. 
+
+The column types are the same as what we observed in the Jan 2021 data set during our initial exploration. 
+
+The date range for `started_at` is from 2021-01-01 to 2021-12-31. 
+
+The date range for `ended_at` is from 2021-01-01 to 2022-01-03, indicating that there were multi-day trips.   
+
+The percentage of missing values are small:
+- `end_lat` (0.09% of rows), 
+- `end_lng` (0.09% of rows), 
+- `start_station_name` (12.3% of rows),
+- `start_station_id` (12.3% of rows),
+- `end_station_name` (13.2% of rows),
+- `end_station_id` (13.2% of rows)  
+
+Similar to our initial exploration above:
+- the number of missing values for `start_station_name` is the same as the number of missing values for `start_station_id` (both 690809 missing values), 
+- the number of missing values for `end_station_name` is the same as the number of missing values for `end_station_id` (both 739170 missing values).
+
+In a real scenario, we should check further with the data source owner to find out why - because data missing in a systematic manner can result in data set bias.  
+
+However, since our data set consists of 5595063 rows, and missing values only form a small percentage of less than 14% of all rows, we still have sufficient data for our current analysis. 
+
+Prior to analyzing the data, we do not know if these missing values affect our analysis. We can therefore still proceed with the analysis at this stage, and then decide later if we need to drop these missing values or perhaps obtain the location data from latitude/longitude data instead.
+
+---
+
+The data was consistent for all variables except for the station variables: the free text fields `start_station_name` and `end_station_name`, and station id fields `start_station_id` and `end_station_id`. 
+
+From the project brief Cyclistic has a network of 692 stations across Chicago. However, for the current data sets, there are more than 800 unique values for these station related variables:  
+- `start_station_id`: 834 unique values, 
+- `start_station_name` 847 unique values, 
+- `end_station_id`: 832 unique values,
+- `end_station_name` 844 unique values. 
+
+This indicates that these 4 variables may contain erroneous values. In a real scenario, we would have to get a list of known stations and check for erroneous entries. However, in view of the lack of further information and our current inability to validate the values within these variables, we would exclude these variales from our analyses. 
+
+In addition, other than the mismatch in unique values, the number of unique values within the variables also suggest that the values within the `start_station_name` and `end_station_name` may be inconsistent. 
+
+In theory, the number of unique values for `start_station_name` should be the same as the number of unique values for `start_station_id`, while the number of unique values for `end_station_name` should be the same as the number of unique values for `end_station_id.`
+
+There are 13 more unique values for `start_station_name` (847) as compared to `start_station_id` (834). 
+There are 12 more unique values for `end_station_name` (844) as compared to `end_station_id` (832).
+
+However, given that:
+
+(i) there are 5595063 rows, 
+(ii) there are at least 800 unique values for these variables,  
+(iii) these are not important variables to answer the business task at hand, 
+(iv) we are unable to validate the data within these fields 
+
+It was deemed that it was not worthwhile or feasible to manually check and replace all inconsistent values for the variables (`start_station_name`, `end_station_name`) for this use case. The inconsistent data values in these two variables were therefore not cleaned. 
+
+We will therefore exclude these location variables from our current analyses. 
+
+Similar to our initial exploration for Jan 2021, there are only 3 unique values for `rideable_type`, and 2 unique values for `member_casual` - we can convert them to factor type to facilitate the analysis. 
+
+## Ensure correct data types & check for missing dates 
+
+The date variables `started_at` and `ended_at` have already been converted to datetime when the csv files were read.  
+We just need to convert `member_casual` and `rideable_type` to factors. 
+We will then check for any missing dates. 
+
+```{r}
+all_trips <- all_trips %>%
+  mutate(
+    member_casual = as.factor(member_casual),
+    rideable_type = as.factor(rideable_type)
+  )
+
+# check missing dates 
+check_missing_date(all_trips, 'started_at')
+check_missing_date(all_trips, 'ended_at')
+```
+
+##  Create new variables 
+- `ride_length`: length of ride in minutes  
+
+- date-related variables: 
+  - `start_date`, `end_date`, `day_of_week`, `month`
+  - convert day of the week to ordered factor 
+
+```{r}
+all_trips <- all_trips %>%
+  mutate(
+    ride_length = difftime(ended_at, started_at, units ='mins'),
+    start_date = date(started_at),
+    day_of_week = weekdays(started_at),
+    month = month(started_at, label=TRUE, abbr=TRUE),
+    end_date = date(ended_at)
+  ) %>%
+  mutate(
+    ride_length = as.numeric(as.character(ride_length)),
+    day_of_week = ordered(
+      day_of_week, 
+      levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+    ),
+    month = ordered(
+      month,
+      levels=month.abb
+    )
+  )
+```
+
+## Clean data
+
+From our earlier initial EDA, we need to exclude negative ride_length values in the analysis as these represent erroneous rows. 
+
+In addition, from this [R script](https://docs.google.com/document/d/1TTj5KNKf4BWvEORGm10oNbpwTRk1hamsWJGj6qRWpuI/edit), `start_station_name` of "HQ QR" was considered to be erroneous/bad data to be excluded as they refer to bikes taken out of docks and checked for quality by Divvy.  
+Let's first check if there are any rows with start_station_name == "HQ QR" that we need to remove.
+
+```{r check start_station_name=="HQ QR"}
+all_trips %>%
+  filter(start_station_name == "HQ QR") %>%
+  count()
+```
+
+Nope, there are no rows with `start_station_name` of "HQ QR". We will just need to remove the rows with negative ride lengths as they represent erroneous entries. We will also remove rows with 0 ride lengths as they also represent erroneous entries. 
+
+```{r check and remove 0 or negative ride lengths}
+print("Number of rows with ride_length <= 0")
+all_trips %>%
+  filter(ride_length<= 0) %>%
+  count()
+
+# remove negative or 0 ride lengths
+all_trips<- all_trips %>% 
+  filter(ride_length>0)
+```
+
+### Re-check combined data sets 
+
+```{r}
+glimpse(all_trips)
+skim_without_charts(all_trips)
+```
+
+The data types are correct and all the required variables have been created. There are no new missing values introduced during the creation of new variables or filtering of erroneous rows. We can now proceed on to the analysis stage. 
+
+# Analysis 
+
+Currently, we only have ride level data (i.e. information on each ride). 
+
+To understand usage patterns, we can aggregate the data by members/casual to check for any differences, as well as by the date variables (date, day_of_week, month) to identify seasonal patterns. 
+
+## Are there any differences in ride duration by casual users and annual members in 2021? 
+
+```{r aggregate dataset by member_casual}
+all_trips_group_member <- all_trips %>%
+  group_by(member_casual) %>%
+  summarise(
+    mean_ride_length = mean(ride_length, na.rm=TRUE),
+    median_ride_length = median(ride_length, na.rm = TRUE),
+    max_ride_length = max(ride_length, na.rm=TRUE),
+    min_ride_length = min(ride_length, na.rm=TRUE)
+  )
+all_trips_group_member
+```
+
+In year 2021, casual users had a mean ride length of 32 minutes, and median ride lengths of 16 minutes. 
+- Since the mean and median values are very different, it indicates that there could be outlier values for casual users that are skewing the mean results. 
+- We will check this later. 
+
+On the other hand, members had a mean ride length of 14 minutes, and a median ride length of 10 minutes.   
+
+So it looks like casual users took longer rides as compared to annual members. Do they differ by different days of the week? 
+
+## Are there differences in ride duration by casual users and annual members for different days of the week in 2021? 
+
+```{r aggregate dataset by member_casual}
+all_trips_member_weekday <- all_trips %>%
+  group_by(member_casual, day_of_week) %>%
+  summarise(
+    mean_ride_length = mean(ride_length, na.rm=TRUE),
+    median_ride_length = median(ride_length, na.rm = TRUE),
+    max_ride_length = max(ride_length, na.rm=TRUE),
+    min_ride_length = min(ride_length, na.rm=TRUE)
+  )
+all_trips_member_weekday
+```
+So it looks like casual users took longer rides in general across the days of the week. 
+
+Similar to our observation above, the mean ride length is very different from the median ride length for casual users, indicating that there could be outlier values for casual users which are skewing the values. Let's see if the distributions of ride lengths are different for casual and annual members: 
+
+## What is the distrbution for ride duration for casual users?
+
+```{r utility function to plot distribution}
+#' Plots a histogram and box plot of a variable in a data frame
+#'
+#' @param df data frame
+#' @param col name of the column to use in ggplot call
+#' @param bins number of bins to use in the histogram. Defaults to 30 bins. 
+#'
+#' @return
+#' @export
+#' @examples 
+plot_dist <- function(df, col, bins=30){
+  
+  p <- ggplot(df) +
+    aes(x={{col}}) +
+    geom_histogram(bins=bins) +
+    theme_minimal() + 
+    labs(title="Histogram")
+  
+  print(p)
+  
+  q <- ggplot(df) +
+    aes(x="", y={{col}}) +
+    geom_boxplot() +
+    theme_minimal() + 
+    labs(title="Boxplot")
+  
+  print(q)
+}
+```
+
+
+```{r distribution of ride_length for casual users}
+# filter for casual users only
+casual <- all_trips %>%
+  filter(member_casual=='casual')
+
+summary(casual$ride_length)
+plot_dist(casual, ride_length, bins=100)
+
+```
+As suspected, there are outlier values which are distorting the mean and median ride length for casual users. Rides more than 1440 minutes represent multi-day trips. The maximum ride length of 55944.15 minutes indicate that the maximum ride took about 38.9 days. 
+
+Unfortunately we do not have further information at this stage to understand these outlier values that are indicative of multi-day trips represent  erroneous records. For example, if we have invoice and payment records to show that the casual user actually paid for the rides, then these outlier values are legitimate transactions. It might actually represent an opportunity to convert these multi-day casual users into annual members.
+
+On the contrary, if these outlier values are due to erroneous sensors on the bike and no one has actually paid for these outlier rides, then these outlier values represents erroneous record which we would have to remove. 
+
+From the histogram, we can also observe that most casual users use the bike for short trips. 
+
+## What is the distribution for ride duration for annual members? 
+
+Let's check the distribution of ride lengths for annual members:
+
+```{r distrbution of ride length for annual members}
+# filter for annual members only
+member <- all_trips %>%
+  filter(member_casual=='member')
+
+summary(member$ride_length)
+plot_dist(member, ride_length, bins=100)
+```
+
+From the histogram, most of the annual members use the bikes within the same day, for short trips. 
+
+## Are there differences in the number of trips and ride duration by casual users and annual members for different days of the week in 2021? 
+
+Since most users (members and casual users) use the bikes for short trips, let's check if the number of trips are different for both groups:
+
+```{r group by member and weekday}
+trips_member_weekday <- all_trips %>%
+  group_by(member_casual, day_of_week) %>%
+  summarize(
+    number_of_trips = n(),
+    mean_ride_length = mean(ride_length, na.rm=TRUE),
+    median_ride_length = median(ride_length, na.rm = TRUE),
+  ) %>%
+  arrange(member_casual, day_of_week) 
+
+trips_member_weekday
+```
+
+From the observations above, members took more trips across all days of the week but with shorter ride duration as compared to casual users. 
+Let's visualize this: 
+
+### Number of trips by day of the week
+
+```{r visualize number of trips for members and casual users for day of the week}
+ggplot(trips_member_weekday)+  
+  aes(x = day_of_week, y = number_of_trips, fill = member_casual) +
+  geom_col(position = "dodge") +
+  labs(
+    title= "Number of trips by day of the week",
+    subtitle = "Jan 2021 to Dec 2021",
+    y = "Number of trips",
+    x = "Day of the week"
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(
+    legend.title=element_blank(),
+    axis.title=element_text(size=12),
+    plot.title = element_text(size=16)
+  )
+```
+
+### Trip duration by day of the week 
+
+```{r visualize median trip duration for members and casual users for day of the week}
+ggplot(trips_member_weekday)+  
+  aes(x = day_of_week, y = median_ride_length, fill = member_casual) +
+  geom_col(position = "dodge") +
+  labs(
+    title= "Trip duration by day of the week",
+    subtitle = "Jan 2021 to Dec 2021",
+    y = "Median ride length",
+    x = "Day of the week"
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(
+    legend.title=element_blank(),
+    axis.title=element_text(size=12),
+    plot.title = element_text(size=16)
+  )
+```
+
+## Are there differences in the number of trips and ride duration by casual users and annual members for different days of the week and ride type in 2021? 
+
+### Number of trips by day of the week and bike type
+
+```{r trips by member, days and ride type}
+trips_member_weekday_ride_type <- all_trips %>%
+  group_by(member_casual, day_of_week, rideable_type) %>%
+  summarize(
+    number_of_trips = n(),
+    mean_ride_length = mean(ride_length, na.rm=TRUE),
+    median_ride_length = median(ride_length, na.rm = TRUE),
+  ) %>%
+  arrange(member_casual, day_of_week) 
+
+trips_member_weekday_ride_type
+
+ggplot(trips_member_weekday_ride_type)+  
+  aes(x = day_of_week, y = number_of_trips, fill = member_casual) +
+  geom_col(position = "dodge") +
+  labs(
+    title= "Number of trips by day of the week and bike type",
+    subtitle = "Jan 2021 to Dec 2021",
+    y = "Number of trips",
+    x = "Day of the week"
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(
+    legend.title=element_blank(),
+    axis.title=element_text(size=12),
+    plot.title = element_text(size=16)
+  ) +
+  facet_wrap(~rideable_type, nrow=3)
+```
+
+From the plots and tables above, it looks like docked bikes are mainly used by casual users. Only 1 member used a docked bike on a Wednesday. 
+Unfortunately we do not have further information on the types of bikes to be able to explain for these observed differences. 
+These could be due to pricing/subscription plans, or the location or these bikes. 
+
+## Are there differences in the number of trips and ride duration by casual users and annual members for different months in 2021? 
+
+### Number of trips by month 
+
+```{r number of trips for members and casual users by month}
+
+trips_member_month <- all_trips %>%
+  group_by(member_casual, month) %>%
+  summarize(
+    number_of_trips = n(),
+    mean_ride_length = mean(ride_length, na.rm=TRUE),
+    median_ride_length = median(ride_length, na.rm = TRUE),
+  ) %>%
+  arrange(member_casual, month) 
+
+trips_member_month
+
+ggplot(trips_member_month)+  
+  aes(x = month, y = number_of_trips, fill = member_casual) +
+  geom_col(position = "dodge") +
+  labs(
+    title= "Number of trips by month",
+    subtitle = "Jan 2021 to Dec 2021",
+    y = "Number of trips",
+    x = "Month"
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(
+    legend.title=element_blank(),
+    axis.title=element_text(size=12),
+    plot.title = element_text(size=16)
+  )
+```
+This analysis is based on data sets from [public divvy bike data](https://divvy-tripdata.s3.amazonaws.com/index.html). These bikes are based in [Chicago in the United States](https://account.divvybikes.com/map). 
+
+It can be observed that there are more trips made during the months of Jun to Sep, which are the late spring to early autumn months. Sp the marketing campaign could be launched during these months as well. 
+
+It is interesting to note that members made more trips than casual users from Aug to Dec (autumn to winter months), as well as in the winter (Jan-Feb). 
+
+### Trip duration by month
+
+```{r trip duration for casual users and members by month}
+ggplot(trips_member_month)+  
+  aes(x = month, y = median_ride_length, fill = member_casual) +
+  geom_col(position = "dodge") +
+  labs(
+    title= "Trip duration by month",
+    subtitle = "Jan 2021 to Dec 2021",
+    y = "Median trip duration",
+    x = "Month"
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(
+    legend.title=element_blank(),
+    axis.title=element_text(size=12),
+    plot.title = element_text(size=16)
+  )
+```
+
+# Were the observations affected by NA values in the start/end stations? 
+
+One of the limitations of our current analyses is that we have limited information to check the reason for missing values in `start_station_name`, `start_station_id`, `end_station_name`, `end_station_id.`  
+
+We therefore need to double check if these missing values influence our analyses above. 
+
+Let's re-run the analyses but with missing values in those fields removed. 
+
+```{r remove na in stations}
+all_trips_no_na <- all_trips %>%
+  drop_na() # drop all na
+
+# check dataframe after dropping na
+glimpse(all_trips_no_na)
+skim_without_charts(all_trips_no_na)
+```
+## Descriptive statistics 
+
+```{r descriptive stats trip duration no na}
+all_trips_no_na_group_member <- all_trips_no_na %>%
+  group_by(member_casual) %>%
+  summarise(
+    mean_ride_length = mean(ride_length, na.rm=TRUE),
+    median_ride_length = median(ride_length, na.rm = TRUE),
+    max_ride_length = max(ride_length, na.rm=TRUE),
+    min_ride_length = min(ride_length, na.rm=TRUE)
+  )
+all_trips_no_na_group_member
+```
+
+```{r}
+all_trips_group_member
+```
+
+The descriptive statistics for the dataset with and without NAs are similar, indicating that the outlier ride length values were not from the rows with NA for the stations. Let's double check the distrbution data: 
+
+## Distribution of trip duration 
+
+```{r distribution of ride_length for casual users no na}
+# filter for casual users only
+casual_no_na <- all_trips_no_na %>%
+  filter(member_casual=='casual')
+
+summary(casual_no_na$ride_length)
+plot_dist(casual_no_na, ride_length, bins=100)
+
+```
+```{r distrbution of ride length for annual members no na}
+# filter for annual members only
+member_no_na <- all_trips_no_na %>%
+  filter(member_casual=='member')
+
+summary(member_no_na$ride_length)
+plot_dist(member_no_na, ride_length, bins=100)
+```
+## Number of trips by day of the week (no NA)
+```{r trips by day of the week, no na}
+trips_member_weekday_no_na <- all_trips_no_na %>%
+  group_by(member_casual, day_of_week) %>%
+  summarize(
+    number_of_trips = n(),
+    mean_ride_length = mean(ride_length, na.rm=TRUE),
+    median_ride_length = median(ride_length, na.rm = TRUE),
+  ) %>%
+  arrange(member_casual, day_of_week) 
+
+trips_member_weekday_no_na
+
+ggplot(trips_member_weekday_no_na)+  
+  aes(x = day_of_week, y = number_of_trips, fill = member_casual) +
+  geom_col(position = "dodge") +
+  labs(
+    title= "Number of trips by day of the week (no NA)",
+    subtitle = "Jan 2021 to Dec 2021",
+    y = "Number of trips",
+    x = "Day of the week"
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(
+    legend.title=element_blank(),
+    axis.title=element_text(size=12),
+    plot.title = element_text(size=16)
+  )
+```
+
+## Trip duration by day of the week (no NA)
+
+```{r visualize median trip duration for members and casual users for day of the week}
+ggplot(trips_member_weekday_no_na)+  
+  aes(x = day_of_week, y = median_ride_length, fill = member_casual) +
+  geom_col(position = "dodge") +
+  labs(
+    title= "Trip duration by day of the week (no NA)",
+    subtitle = "Jan 2021 to Dec 2021",
+    y = "Median ride length",
+    x = "Day of the week"
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  theme(
+    legend.title=element_blank(),
+    axis.title=element_text(size=12),
+    plot.title = element_text(size=16)
+  )
+
+```
+
+The results of the analyses and the relationships are similar for the dataset with NAs removed for `start_station_id`, `start_station_name`, `end_station_id`, `end_station_name`. 
+
+Therefore, the presence of NA values in these variables do not affect the relationships and trends identified in this analysis. 
+
+We can now proceed to consolidate all the information above into a report (`Case Study1 - Report.Rmd`). 
