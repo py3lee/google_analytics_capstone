@@ -15,7 +15,7 @@ Past 12 months' of public data on bike trips by Motivate International Inc.
 1. [`Case_Study1 - Exploration.Rmd`](EDA/Case_Study1-Exploration.Rmd)
   - Details the initial data exploration of the data sets and directions for cleaning and preprocessing of files. 
 
-2. [`Case_Study1 - Report.Rmd`](Case_Study1-Report.Rmd)
+2. [`Case_Study1 - Report.Rmd`](Case_Study1-Report.Rmd) or [html version](https://htmlpreview.github.io/?https://github.com/py3lee/google_analytics_capstone/blob/main/EDA/Case_Study1-Report.html)
   - The main report and deliverable for the capstone project 
   - Contains information on:
       - Evaluation of data sets, 
