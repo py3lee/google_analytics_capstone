@@ -279,7 +279,7 @@ div.tocify {
 </ul>
 <div id="data-structure" class="section level2" number="5.1">
 <h2><span class="header-section-number">5.1</span> Data structure</h2>
-<p>These are tabular data sets - i.e. organized by rows and columns, with each row representing a ride by a user (ride_id), and column representing information about the ride (i.e. start station, end station, type of ride etc).</p>
+<p>These are tabular data sets - i.e. organized by rows and columns, with each row representing a ride by a user (<code>ride_id</code>), and column representing information about the ride (i.e. start station, end station, type of ride etc).</p>
 </div>
 <div id="limitations-of-data-source" class="section level2" number="5.2">
 <h2><span class="header-section-number">5.2</span> Limitations of data source</h2>
@@ -293,7 +293,8 @@ div.tocify {
 <div id="data-set-quality" class="section level1" number="6">
 <h1><span class="header-section-number">6</span> Data set quality</h1>
 <p>Data set dimensions:<br />
-- 5595063 rows, - 13 columns</p>
+- 5595063 rows,<br />
+- 13 columns</p>
 <p>The dataset contained rides that started from 2021-01-01 to 2021-12-31.</p>
 <div id="missing-values" class="section level2" number="6.1">
 <h2><span class="header-section-number">6.1</span> Missing values</h2>
@@ -313,13 +314,24 @@ div.tocify {
 <li>the number of missing values for <code>end_station_name</code> is the same as the number of missing values for <code>end_station_id</code> (both 739170 missing values).</li>
 </ul>
 <p>In a real scenario, we should check further with the data source owner to find out why - because data missing in a systematic manner can result in data set bias.</p>
-<p>There was still sufficient data for our current analysis as our data set consisted of 5595063 rows, and missing values only form a small percentage of less than 14% of all rows. As a precaution, the results of the analyses were re-checked again after dropping these missing values. The trends and relationships observed from the data were similar with or without dropping the missing values in the dataset, This indicates that missing values did not affect our current analyses.</p>
+<p>There was still sufficient data for our current analysis as our data set consisted of 5595063 rows, and missing values only form a small percentage of less than 14% of all rows.<br />
+- As a precaution, the results of the analyses were re-checked again after dropping these missing values.<br />
+- The trends and relationships observed from the data were similar with or without dropping the missing values in the dataset.<br />
+- This indicates that missing values did not affect our current analyses.</p>
 </div>
 <div id="data-consistency" class="section level2" number="6.2">
 <h2><span class="header-section-number">6.2</span> Data consistency</h2>
 <p>The data was consistent for all variables except for the station variables: the free text fields <code>start_station_name</code> and <code>end_station_name</code>, and station id fields <code>start_station_id</code> and <code>end_station_id</code>.</p>
-<p>From the project brief Cyclistic has a network of 692 stations across Chicago. However, for the current data sets, there are more than 800 unique values for these station related variables:<br />
-- <code>start_station_id</code>: 834 unique values, - <code>start_station_name</code> 847 unique values, - <code>end_station_id</code>: 832 unique values, - <code>end_station_name</code> 844 unique values.</p>
+<p>From the project brief Cyclistic has a network of 692 stations across Chicago. However, for the current data sets, there are more than 800 unique values for these station related variables:</p>
+<ul>
+<li><code>start_station_id</code>: 834 unique values,<br />
+</li>
+<li><code>start_station_name</code> 847 unique values,<br />
+</li>
+<li><code>end_station_id</code>: 832 unique values,<br />
+</li>
+<li><code>end_station_name</code> 844 unique values.</li>
+</ul>
 <p>This indicates that these 4 variables may contain erroneous values. In a real scenario, we would have to get a list of known stations and check for erroneous entries. However, in view of the lack of further information and our current inability to validate the values within these variables, we would exclude these variables from our analyses.</p>
 <p>In addition, other than the mismatch in unique values, the number of unique values within the variables also suggest that the values within the <code>start_station_name</code> and <code>end_station_name</code> may be inconsistent.</p>
 <p>In theory, the number of unique values for <code>start_station_name</code> should be the same as the number of unique values for <code>start_station_id</code>, while the number of unique values for <code>end_station_name</code> should be the same as the number of unique values for <code>end_station_id.</code></p>
@@ -343,7 +355,10 @@ div.tocify {
 <h2><span class="header-section-number">6.4</span> Potential sources of bias</h2>
 <p>In a real scenario, we would check with the data source owner to understand if there are any known reasons for missing data within the data set, and also to understand if any data was excluded in the current <a href="https://divvy-tripdata.s3.amazonaws.com/index.html">data repository</a>.</p>
 <p>From the project brief, “Cyclistic sets itself apart by also offering reclining bikes, hand tricycles, and cargo bikes, making bike-share more inclusive to people with disabilities and riders who can’t use a standard two-wheeled bike”.</p>
-<p>However, in our current data set, we only have 3 unique values for bike type (<code>rideable_type</code>): <code>classic_bike</code>, <code>electric_bike</code> and <code>docked_bike</code>. This means that we are missing data in the other bike types mentioned in the project brief (reclining bikes, hand tricycles, and cargo bikes).</p>
+<ul>
+<li>However, in our current data set, we only have 3 unique values for bike type (<code>rideable_type</code>): <code>classic_bike</code>, <code>electric_bike</code> and <code>docked_bike</code>.</li>
+<li>This means that we are missing data in the other bike types mentioned in the project brief (reclining bikes, hand tricycles, and cargo bikes).</li>
+</ul>
 <p>Missing data, under-represented groups or groups not included in the data repository could unintentionally bias our analysis. We would need to ensure that the data sets accurately represent the whole population of Cyclistic users.</p>
 <p>We were also unable to validate the location data within the datasets, and therefore unable to identify erroneous rows contained within the variables <code>start_station_id</code>, <code>end_station_id</code>, <code>start_station_name</code> and <code>end_station_name</code>. If there are erroneous entries with these variables, then that could bias our current analyses.</p>
 </div>
@@ -352,9 +367,12 @@ div.tocify {
 <p>We have complete data on whether rides are by members or casual users in the <code>member_casual</code> column.</p>
 <p>Information from <code>rideable_type</code> can help us to differentiate the types of rides. Other date/day related variables can be derived from <code>started_at</code> and <code>ended_at</code>: <code>start_date</code>, <code>end_date</code>, <code>day_of_the_week</code>, <code>month</code> to aggregate the data in our analysis.</p>
 <p>Trip duration (<code>ride_length</code>) can also be derived from <code>started_at</code>, <code>ended_at</code>.</p>
-<p>The information contained within these data sets are at the ride level (i.e organized by ride_ids). However, due to data privacy concerns, we do not have information or sufficient information to aggregate these data sets to a customer level (i.e. organized by customer_id). This would be a limitation of our current analysis.</p>
+<p>The information contained within these data sets are at the ride level (i.e organized by ride_ids). - However, due to data privacy concerns, we do not have information or sufficient information to aggregate these data sets to a customer level (i.e. organized by customer_id).<br />
+- This would be a limitation of our current analysis.</p>
 <p>Another limitation of the current analysis is the exclusion of station related location information due to the mismatch in known number of unique values with the project brief (692 docking stations stated in the project brief vs &gt;800 unique values noted in the current dataset) and our current inability to validate the data.</p>
-<p>However, with the current information on ride types, date-related information and ride length, we still do have sufficient data to answer our business task of identifying historical trends for casual and annual bike riders, and determining possible factors that influence casual riders into buying annual memberships.</p>
+<ul>
+<li>However, with the current information on ride types, date-related information and ride length, we still do have sufficient data to answer our business task of identifying historical trends for casual and annual bike riders, and determining possible factors that influence casual riders into buying annual memberships.</li>
+</ul>
 </div>
 <div id="data-preprocessing-steps-prior-to-analysis" class="section level2" number="6.6">
 <h2><span class="header-section-number">6.6</span> Data preprocessing steps prior to analysis</h2>
@@ -513,18 +531,40 @@ member
 </div>
 <div id="recommendations" class="section level2" number="8.2">
 <h2><span class="header-section-number">8.2</span> Recommendations</h2>
+<blockquote>
 <ol style="list-style-type: decimal">
-<li><p>Cyclistic should conduct a focus group or digital survey targeted at weekend casual riders, dockable bike users and casual riders who had extended trip duration to understand the reasons why they use Cyclistic bikes and the factors that would influence them into buying an annual membership.</p></li>
-<li><p>In terms of the possible marketing period, Cyclistic can consider conducting the campaign during the Spring/Summer months of June to September, when most casual trips occur.</p></li>
+<li>Cyclistic should conduct a focus group or digital survey targeted at weekend casual riders, dockable bike users and casual riders who had extended trip duration to understand the reasons why they use Cyclistic bikes and the factors that would influence them into buying an annual membership.</li>
 </ol>
+</blockquote>
+<blockquote>
+<ol start="2" style="list-style-type: decimal">
+<li>In terms of the possible marketing period, Cyclistic can consider conducting the campaign during the Spring/Summer months of June to September, when most casual trips occur.</li>
+</ol>
+</blockquote>
 </div>
 <div id="how-the-analyses-can-be-improved" class="section level2" number="8.3">
 <h2><span class="header-section-number">8.3</span> How the analyses can be improved</h2>
-<p>The information contained within these data sets are at the ride level (i.e organized by ride_ids) due to data privacy concerns. Obtaining further information to allow for the aggregation of the data sets to a customer level (i.e. organized by customer id) would enable us to better elucidate the differences between casual and annual members. If we can obtain demographic information of these users (eg. age, gender etc) then this would further add to our understanding of the various casual user groups that use Cyclistic bikes.</p>
-<p>If we are able to obtain data on the usage patterns of the missing bike types (reclining bikes, hand tricycles, and cargo bikes), we can also compare if the usage patterns for these bikes are different for casual and annual members.</p>
-<p>To understand seasonal bike usage patterns better, we can also obtain a list of public holidays and school holidays to compare holiday usage patterns for casual and annual members.</p>
-<p>In addition, it would also be worthwhile to obtain data that can subset our analyses further into single-ride or full-day passes as these may actually represent two distinct groups with different needs. By analyzing them as a single group (‘casual’), such differences may be masked.</p>
-<p>To improve our current analyses, we can also analyze geo-location data using the longitude and latitude information. This would allow us to understand if there are geographical or location factors that influence the usage patterns of Cyclistic bikes. However, prior to that, we would first need to address the data inconsistencies and missing data within the station variables (<code>start_station_id</code>, <code>end_station_id</code>), and validate the location data to ensure that our data is clean and comprehensive before proceeding to analyse location data.</p>
+<ol style="list-style-type: decimal">
+<li>The information contained within these data sets are at the ride level (i.e organized by <code>ride_ids</code>) due to data privacy concerns.</li>
+</ol>
+<ul>
+<li><p>Obtaining further information to allow for the aggregation of the data sets to a customer level (i.e. organized by customer id) would enable us to better elucidate the differences between casual and annual members.</p></li>
+<li><p>If we can obtain demographic information of these users (eg. age, gender etc) then this would further add to our understanding of the various casual user groups that use Cyclistic bikes.</p></li>
+</ul>
+<ol start="2" style="list-style-type: decimal">
+<li>The current dataset only contains usage patterns for three types of bikes (classic bike, electric bike, dockable bike). The other bike types mentioned in the project brief, such as reclining bikes, hand tricycles, and cargo bikes are not found in this dataset.</li>
+</ol>
+<ul>
+<li>If we can obtain the missing information, we would be able to compare if the usage patterns for those bikes are different for casual and annual members.</li>
+</ul>
+<ol start="3" style="list-style-type: decimal">
+<li><p>To understand seasonal bike usage patterns better, we can also obtain a list of public holidays and school holidays to compare holiday usage patterns for casual and annual members.</p></li>
+<li><p>When additional information becomes available, we should try to further subset our analyses into single-ride or full-day passes as these may actually represent two distinct groups with different needs. By analyzing them as a single group (‘casual’), such differences may be masked.</p></li>
+<li><p>We can also analyze geo-location data using the longitude and latitude information. This would allow us to understand if there are geographical or location factors that influence the usage patterns of Cyclistic bikes.</p></li>
+</ol>
+<ul>
+<li>However, prior to that, we would first need to address the data inconsistencies and missing data within the station variables (<code>start_station_id</code>, <code>end_station_id</code>), and validate the location data to ensure that our data is clean and comprehensive before proceeding to analyse location data.</li>
+</ul>
 </div>
 </div>
 
